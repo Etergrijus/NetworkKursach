@@ -3,6 +3,8 @@
 
 #include <boost/asio.hpp>
 
+#include "Lobby.h"
+
 #define USERNAME_SIZE 64
 #define TRUE_SERVER_ANSWER "Hello\n"
 
@@ -10,7 +12,6 @@ using ioContextAlias = boost::asio::io_context;
 using tcpAlias = boost::asio::ip::tcp;
 
 std::string u8string_to_string(const std::u8string& u8str) {
-    //return std::string(u8str.begin(), u8str.end());
     std::string s(u8str.begin(), u8str.end());
     s.erase(std::remove(s.begin(), s.end(), '\n'), s.cend());
     return s;
@@ -72,8 +73,12 @@ private:
         if (!error) {
             std::u8string username(buffer->data(), bytes);
             std::cout << "Player " << u8string_to_string(username) << " knocks on the door" << std::endl;
+            lobby.findRoom(username);
+
             startWrite(socket, TRUE_SERVER_ANSWER);
             startRead(socket);
+        } else if (error == boost::asio::error::eof) {
+            closeSocket(socket);
         } else {
             std::cerr << "Read error: " << error.message() << std::endl;
             closeSocket(socket);
@@ -93,19 +98,21 @@ private:
 
     void handleWrite(const std::shared_ptr<tcpAlias::socket>& socket,
                      const boost::system::error_code& error) {
-        if (error) {
-            std::cerr << "Write error: " << error.message() << std::endl;
-            closeSocket(socket);
-        } else {
+        if (!error) {
             std::cout << "Answer sent\n";
             startRead(socket);
+        } else if (error == boost::asio::error::eof) {
+            closeSocket(socket);
+        } else {
+            std::cerr << "Write error: " << error.message() << std::endl;
+            closeSocket(socket);
         }
     }
 
     void closeSocket(const std::shared_ptr<tcpAlias::socket>& socket) {
         if (socket && socket->is_open()) {
             boost::system::error_code error;
-            std::cout << "Disonnected: " << socket->remote_endpoint().address().to_string();
+            std::cout << "Disonnected: " << socket->remote_endpoint().address().to_string() << std::endl;
             socket->shutdown(boost::asio::socket_base::shutdown_both, error);
             socket->close();
         }
@@ -114,6 +121,8 @@ private:
 
     ioContextAlias &_ioContext;
     tcpAlias::acceptor _acceptor;
+
+    Lobby lobby;
 };
 
 int main() {
