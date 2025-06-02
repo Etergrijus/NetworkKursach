@@ -1,0 +1,3 @@
+D:/CLionProjects/ServerKurssWork/cmake-build-debug/CMakeFiles/ServerKurssWork.dir
+D:/CLionProjects/ServerKurssWork/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/CLionProjects/ServerKurssWork/cmake-build-debug/CMakeFiles/rebuild_cache.dir
