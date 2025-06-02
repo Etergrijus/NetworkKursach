@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/beige">
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/baseTextSize"
+        android:textAlignment="center"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+
+
+        android:paddingTop="@dimen/paddingTopOnStartWindow"
+        />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+
+        android:layout_below="@id/text"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="@dimen/marginViewsConnectWindow"
+
+        android:indeterminateDrawable="@drawable/animated_progress_bar"
+        />
+
+    <Button
+        android:id="@+id/returnButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:layout_below="@id/progressBar"
+        android:layout_marginHorizontal="@dimen/marginHorizontal"
+        android:layout_centerHorizontal="true"
+
+        android:text="@string/returnButtonText"
+        android:textSize="@dimen/returnButtonTextSize"
+        android:background="@color/light_grey"
+        android:textColor="@color/red"
+        android:textAllCaps="false"
+        />
+
+</RelativeLayout>

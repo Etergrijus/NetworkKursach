@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ClientKursWork</string>
+    <string name="title">ПАРЧИС</string>
+
+    <string name="buttonStartGameText">Играть</string>
+    <string name="returnButtonText">Отмена</string>
+
+    <string name="placeholderUsername">Введите имя</string>
+    <string name="emptyUsernameHint">Пустое имя!</string>
+
+    <string name="awaitingNetwork">Подключение к серверу...</string>
+    <string name="awaitingPlayers">Ожидание игроков...</string>
+
+    <string name="trueServerAnswer">Hello</string>
+</resources>
