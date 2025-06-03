@@ -16,8 +16,16 @@ public:
         id++;
     }
 
+    Room* get() {
+        return this;
+    }
+
     int getID() const {
         return id;
+    }
+
+    std::vector<std::u8string> getPlayers() {
+        return players;
     }
 
     void addPlayer(const std::u8string& username) {

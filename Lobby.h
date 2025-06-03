@@ -14,19 +14,24 @@ public:
         lobby.reserve(5);
     }
 
-    void findRoom(const std::u8string& username) {
-        if (lobby.empty())
-            addRoom();
-        else {
+    Room *findRoom(const std::u8string &username) {
+        Room *room;
+
+        if (lobby.empty()) {
+            room = addRoom(username);
+            return room;
+        } else {
             std::uniform_int_distribution<size_t> dist(0, lobby.size() - 1);
             for (size_t nTries = 0; nTries <= 10; nTries++) {
                 size_t roomIndex = dist(engine);
-                auto room = lobby[roomIndex];
-                if (!room.isRoomOnVoting() && !room.isGameStarted() && !room.isRoomFull()) {
+                room = &lobby[roomIndex];
+                if (!room->isRoomOnVoting() && !room->isGameStarted() && !room->isRoomFull()) {
                     lobby[roomIndex].addPlayer(username);
-                    break;
-                } else if (nTries == 10)
-                    addRoom();
+                    return room->get();
+                } else if (nTries == 10) {
+                    room = addRoom(username);
+                    return room;
+                }
             }
         }
     }
@@ -35,10 +40,14 @@ private:
     std::vector<Room> lobby;
     std::unordered_map<int, size_t> idIndexMap;
     std::mt19937 engine;
-    void addRoom() {
+
+    Room *addRoom(const std::u8string &username) {
         lobby.emplace_back();
-        auto emplacedRoom = lobby.size() - 1;
-        idIndexMap[lobby[emplacedRoom].getID()] = emplacedRoom;
+        auto emplacedRoomIndex = lobby.size() - 1;
+        idIndexMap[lobby[emplacedRoomIndex].getID()] = emplacedRoomIndex;
+
+        lobby.back().addPlayer(username);
+        return lobby.back().get();
     }
 };
 
