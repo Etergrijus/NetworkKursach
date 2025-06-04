@@ -34,6 +34,16 @@ public:
                 }
             }
         }
+
+        return nullptr;
+    }
+
+    Room *getRoomById(const int id) {
+        auto it = idIndexMap.find(id);
+        if (it != idIndexMap.end())
+            return lobby[idIndexMap[id]].get();
+        else
+            return nullptr;
     }
 
 private:

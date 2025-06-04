@@ -36,27 +36,25 @@ void Server::handleAccept(const std::shared_ptr<tcpAlias::socket> &socket, const
 }
 
 void Server::startRead(const std::shared_ptr<tcpAlias::socket> &socket) {
-    // Общий буфер для чтения
-    auto buffer = std::make_shared<std::array<char8_t, USERNAME_SIZE>>();
-    //Читаем данные
-    socket->async_read_some(
-            // Буфер для чтения данных
-            boost::asio::buffer(buffer->data(), buffer->size()),
-            [this, socket, buffer]
-                    (const boost::system::error_code &error, size_t bytes) mutable {
-                handleRead(socket, error, bytes, buffer);
-            });
+    if (socket->is_open()) {
+        // Общий буфер для чтения
+        auto buffer = std::make_shared<std::array<char8_t, BUFFER_SIZE>>();
+        //Читаем данные
+        socket->async_read_some(
+                // Буфер для чтения данных
+                boost::asio::buffer(buffer->data(), buffer->size()),
+                [this, socket, buffer]
+                        (const boost::system::error_code &error, size_t bytes) mutable {
+                    handleRead(socket, error, bytes, buffer);
+                });
+    }
 }
 
 void Server::handleRead(const std::shared_ptr<tcpAlias::socket> &socket, const boost::system::error_code &error,
-                        size_t bytes, std::shared_ptr<std::array<char8_t, USERNAME_SIZE>> &buffer) {
+                        size_t bytes, std::shared_ptr<std::array<char8_t, BUFFER_SIZE>> &buffer) {
     if (!error) {
-        std::cout << "handleRead: Received " << bytes << " bytes" << std::endl;  // Лог
-
         std::u8string rawMessage(buffer->data(), bytes);
         Message msg = parseMessage(rawMessage);
-        std::cout << "handleRead: Parsed message scenario: " << static_cast<int>(msg.scenario) << std::endl; // Лог
-        std::cout << "handleRead: Parsed message data: " << u8StringToString(msg.data) << std::endl; // Лог
 
         if (msg.scenario != NetworkScenario::UNKNOWN) {
             handleMessage(msg, socket);
@@ -66,9 +64,9 @@ void Server::handleRead(const std::shared_ptr<tcpAlias::socket> &socket, const b
 
         startRead(socket);
     } else if (error == boost::asio::error::eof) {
-        closeSocket(socket);
+        //closeSocket(socket);
     } else {
-        std::cerr << "Read error: " << error.message() << std::endl;
+        std::cerr << "Read error: " << error.what() << std::endl;
         closeSocket(socket);
     }
 }
@@ -97,7 +95,7 @@ void Server::handleWrite(const std::shared_ptr<tcpAlias::socket> &socket, const 
     if (!error) {
         std::cout << "Answer sent" << std::endl;
     } else if (error == boost::asio::error::eof) {
-        closeSocket(socket);
+        //closeSocket(socket);
     } else {
         std::cerr << "Write error: " << error.message() << std::endl;
         closeSocket(socket);
@@ -107,7 +105,8 @@ void Server::handleWrite(const std::shared_ptr<tcpAlias::socket> &socket, const 
 void Server::closeSocket(const std::shared_ptr<tcpAlias::socket> &socket) {
     if (socket && socket->is_open()) {
         boost::system::error_code error;
-        std::cout << "Disonnected: " << socket->remote_endpoint().address().to_string() << std::endl;
+        std::cout << "Disconnected: " << socket->remote_endpoint().address().to_string() << std::endl;
+        socket->cancel(error);
         socket->shutdown(boost::asio::socket_base::shutdown_both, error);
         socket->close();
     }
@@ -146,7 +145,7 @@ std::u8string Server::stringToU8String(const std::string &str) {
 
 void Server::registerHandlerImpls() {
     handlerImpls[NetworkScenario::CONNECT] = std::make_unique<ConnectionNetworkHandler>();
-    //handlerImpls[NetworkScenario::DISCONNECT] = std::make_unique<>()
+    handlerImpls[NetworkScenario::DISCONNECT] = std::make_unique<DisconnectionNetworkHandler>();
 }
 
 Message Server::parseMessage(const std::u8string &rawMessage) {

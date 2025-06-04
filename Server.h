@@ -9,8 +9,9 @@
 
 #include "handlers.h"
 
-#define USERNAME_SIZE 64
+#define BUFFER_SIZE 512
 #define TRUE_SERVER_ANSWER "Hello\n"
+#define DISCONNECT_OK "Disconnected\n"
 #define CORRECT_ROOM_INFO "ROOM_INFO"
 
 using ioContextAlias = boost::asio::io_context;
@@ -47,7 +48,7 @@ private:
 
     void handleRead(const std::shared_ptr<tcpAlias::socket>& socket,
                     const boost::system::error_code &error,
-                    size_t bytes, std::shared_ptr<std::array<char8_t, USERNAME_SIZE>>& buffer);
+                    size_t bytes, std::shared_ptr<std::array<char8_t, BUFFER_SIZE>>& buffer);
 
     void handleMessage(const Message& message, const std::shared_ptr<tcpAlias::socket>& socket);
 

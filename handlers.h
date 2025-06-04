@@ -39,5 +39,11 @@ public:
                        Server& server) override;
 };
 
+class DisconnectionNetworkHandler : public NetworkHandler {
+public:
+    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                       Server& server) override;
+};
+
 
 #endif //SERVERKURSSWORK_HANDLERS_H

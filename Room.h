@@ -8,7 +8,7 @@
 class Room {
 public:
     Room() {
-        players.resize(4);
+        players.resize(maxPlayers);
         isVotedNow = false;
         isStarted = false;
         nPlayers = 0;
@@ -36,6 +36,7 @@ public:
     void exitFromRoom(const std::u8string& username) {
         nPlayers--;
         players.erase(std::remove(players.begin(), players.end(), username),players.end());
+        players.resize(maxPlayers);
     }
 
     bool isRoomFull() const {
@@ -62,10 +63,9 @@ private:
     bool isVotedNow;
     bool isStarted;
     int nPlayers;
-    int id = 0;
+    inline static int id = 0;
 
     const int maxPlayers = 4;
 };
-
 
 #endif //SERVERKURSSWORK_ROOM_H
