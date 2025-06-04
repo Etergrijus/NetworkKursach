@@ -6,16 +6,16 @@
     android:background="@color/beige">
 
     <TextView
-        android:id="@+id/text"
+        android:id="@+id/statusText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+
         android:textSize="@dimen/baseTextSize"
         android:textAlignment="center"
         android:textStyle="bold"
-        android:textColor="@color/black"
+        android:textColor="@color/rose"
 
-
-        android:paddingTop="@dimen/paddingTopOnStartWindow"
+        android:paddingTop="@dimen/paddingTopOnConnectWindow"
         />
 
     <ProgressBar
@@ -24,9 +24,9 @@
         android:layout_height="wrap_content"
         android:indeterminate="true"
 
-        android:layout_below="@id/text"
+        android:layout_below="@id/statusText"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="@dimen/marginViewsConnectWindow"
+        android:layout_marginBottom="@dimen/smallMarginViewsConnectWindow"
 
         android:indeterminateDrawable="@drawable/animated_progress_bar"
         />
@@ -42,9 +42,70 @@
 
         android:text="@string/returnButtonText"
         android:textSize="@dimen/returnButtonTextSize"
-        android:background="@color/light_grey"
-        android:textColor="@color/red"
+        android:background="@color/red"
+        android:textColor="@color/beige"
         android:textAllCaps="false"
+        android:textStyle="bold"
         />
+
+    <TextView
+        android:id="@+id/roomText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:text="@string/roomString"
+        android:textSize="@dimen/baseTextSize"
+        android:textAlignment="center"
+        android:textStyle="bold"
+        android:textColor="@color/rose"
+
+        android:layout_below="@id/returnButton"
+        android:layout_marginTop="@dimen/marginViewsConnectWindow"
+        />
+
+    <LinearLayout
+        android:id="@+id/players"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+
+        android:layout_below="@id/roomText"
+        android:layout_marginBottom="@dimen/bigMarginViewsConnectWindow"
+        />
+
+    <Button
+        android:id="@+id/denialButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:layout_below="@id/players"
+        android:layout_marginStart="@dimen/marginOfButtonsConnectWindow"
+
+        android:text="@string/denialButtonText"
+        android:textSize="@dimen/otherButtonsTextSize"
+        android:background="@color/red"
+        android:textColor="@color/beige"
+        android:textAllCaps="false"
+        android:textStyle="bold"
+        />
+
+    <Button
+        android:id="@+id/votingButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:layout_below="@id/players"
+        android:layout_toEndOf="@id/denialButton"
+        android:layout_marginStart="@dimen/marginOfButtonsConnectWindow"
+        android:layout_marginEnd="@dimen/marginOfButtonsConnectWindow"
+
+        android:text="@string/votingButtonText"
+        android:textSize="@dimen/otherButtonsTextSize"
+        android:background="@color/red"
+        android:textColor="@color/beige"
+        android:textAllCaps="false"
+        android:textStyle="bold"
+        />
+
 
 </RelativeLayout>

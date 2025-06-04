@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="paddingTopOnStartWindow">200dp</dimen>
+    <dimen name="paddingTopOnConnectWindow">100dp</dimen>
+
     <dimen name="marginViewsStartWindow">90dp</dimen>
-    <dimen name="marginViewsConnectWindow">220dp</dimen>
+    <dimen name="marginViewsConnectWindow">90dp</dimen>
+    <dimen name="bigMarginViewsConnectWindow">180dp</dimen>
+    <dimen name="smallMarginViewsConnectWindow">30dp</dimen>
     <dimen name="marginHorizontal">100dp</dimen>
+    <dimen name="marginOfButtonsConnectWindow">50dp</dimen>
+
+
     <dimen name="baseTextSize">28sp</dimen>
     <dimen name="returnButtonTextSize">24sp</dimen>
+    <dimen name="otherButtonsTextSize">18sp</dimen>
+
     <dimen name="letterSpace">0.4</dimen>
 </resources>

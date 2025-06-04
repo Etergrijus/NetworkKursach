@@ -40,6 +40,14 @@ class MainActivity : AppCompatActivity(), FragmentActivitySignalman {
         transaction.addToBackStack(null)
         transaction.commit()
     }
+
+    override fun onReturnOnStart() {
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
+            Log.d("Fragments switch", "Success")
+        } else
+            Log.d("Fragment switch", "Fail")
+    }
 }
 
 @Composable

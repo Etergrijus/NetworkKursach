@@ -13,12 +13,12 @@ import com.example.clientkurswork.databinding.FragmentStartWindowBinding
 class StartWindowFragment : Fragment() {
     private lateinit var binding: FragmentStartWindowBinding
 
-    private var dataPassListener: FragmentActivitySignalman? = null
+    private var signalman: FragmentActivitySignalman? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         try {
-            dataPassListener = context as FragmentActivitySignalman
+            signalman = context as FragmentActivitySignalman
         } catch (e: ClassCastException) {
             Log.d("DataPass", "Error")
             throw ClassCastException("$context must implement FragmentActivitySignalman")
@@ -41,14 +41,14 @@ class StartWindowFragment : Fragment() {
             if (binding.usernameEdit.text.isEmpty())
                 binding.usernameEdit.setHint(R.string.emptyUsernameHint)
             else {
-                dataPassListener?.onDataPass(binding.usernameEdit.text.toString())
-                dataPassListener?.onShowNextFragment()
+                signalman?.onDataPass(binding.usernameEdit.text.toString())
+                signalman?.onShowNextFragment()
             }
         }
     }
 
     override fun onDetach() {
         super.onDetach()
-        dataPassListener = null
+        signalman = null
     }
 }

@@ -4,12 +4,19 @@
 
     <string name="buttonStartGameText">Играть</string>
     <string name="returnButtonText">Отмена</string>
+    <string name="denialButtonText">Сменить</string>
+    <string name="votingButtonText">Предложить начать</string>
 
     <string name="placeholderUsername">Введите имя</string>
     <string name="emptyUsernameHint">Пустое имя!</string>
 
     <string name="awaitingNetwork">Подключение к серверу...</string>
     <string name="awaitingPlayers">Ожидание игроков...</string>
+    <string name="roomString">Моя комната</string>
 
     <string name="trueServerAnswer">Hello</string>
+    <string name="disconnectOK">Disconnected</string>
+    <string name="correctRoomInfo">ROOM_INFO</string>
+    <string name="joinMessage">JOIN</string>
+    <string name="leaveMessage">LEAVE</string>
 </resources>
