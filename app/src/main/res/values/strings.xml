@@ -10,13 +10,35 @@
     <string name="placeholderUsername">Введите имя</string>
     <string name="emptyUsernameHint">Пустое имя!</string>
 
-    <string name="awaitingNetwork">Подключение к серверу...</string>
-    <string name="awaitingPlayers">Ожидание игроков...</string>
+    <string name="awaitingNetwork">Подключение к серверу…</string>
+    <string name="awaitingPlayers">Ожидание игроков…</string>
     <string name="roomString">Моя комната</string>
 
     <string name="trueServerAnswer">Hello</string>
+    <string name="correctRoomInfo">Your_room</string>
     <string name="disconnectOK">Disconnected</string>
-    <string name="correctRoomInfo">ROOM_INFO</string>
+    <string name="newRoomFinding">Finding</string>
+    <string name="needVoting">Voting_started</string>
+    
+    <string name="accepted">Accepted</string>
+    <string name="declined">Declined</string>
+    <string name="startGame">Game_started</string>
+    <string name="notStartGame">Game_not_started</string>
+
     <string name="joinMessage">JOIN</string>
     <string name="leaveMessage">LEAVE</string>
+    
+    <string name="connectStr">CONNECT</string>
+    <string name="disconnectStr">DISCONNECT</string>
+    <string name="denialStr">DENIAL</string>
+    <string name="startVotingStr">START_VOTING</string>
+
+    <string name="acceptStr">ACCEPT</string>
+    <string name="declineStr">DECLINE</string>
+
+    
+    <string name="voting">Голосование</string>
+    <string name="votingMessage">предлагает начать игру</string>
+    <string name="voteAccept">Согласиться</string>
+    <string name="voteDecline">Отказаться</string>
 </resources>

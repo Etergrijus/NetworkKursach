@@ -10,17 +10,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.compose.ui.graphics.Color
+import android.graphics.Typeface
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.ui.text.TextStyle
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.clientkurswork.databinding.FragmentAwaitingBinding
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Collections.swap
 
 class ConnectAwaitingFragment(private val username: String) : Fragment() {
     private lateinit var binding: FragmentAwaitingBinding
@@ -57,13 +59,11 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.statusText.setText(R.string.awaitingNetwork)
-
-        netHandler = NetworkHandler(requireContext())
-
         binding.returnButton.setOnClickListener {
             signalman?.onReturnOnStart()
         }
 
+        netHandler = NetworkHandler(requireContext())
         lifecycleScope.launch(Dispatchers.IO) {
             val success = netHandler.connectToServer(username)
             withContext(Dispatchers.Main) {
@@ -77,41 +77,29 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
 
             val response = netHandler.getRoomInfo()
             withContext(Dispatchers.Main) {
-                val parts = response.split(" ")
-                if (parts.size >= 3) {
-                    try {
-                        roomId = parts[1].toInt()
-                        Log.d("Network", "ID: $roomId")
-
-                        //players.addAll(parts.subList(2, parts.size - 1))
-                        val playersNicknames = parts.subList(2, parts.size - 1)
-                        playersNicknames.forEach {playerName ->
-                            showNetworkData(playerName)
-                        }
-                    } catch (e: NumberFormatException) {
-                        Log.e("Client", "Invalid room info format: ${e.message}")
-                        throw NumberFormatException()
-                    }
-
-                    //showNetworkData(parts)
-                } else {
-                    Log.e("Client", "Invalid room info format")
-                }
+                handleNetworkData(response)
             }
 
-            netHandler.hearServer {eventType, username_ ->
-                lifecycleScope.launch(Dispatchers.Main) {
-                    when(eventType) {
-                        "JOIN" -> {
-                            Log.d("Client", "Player joined: $username_")
-                            for (i in 0 until players.size)
-                                if (players[i].text.isNullOrEmpty()) {
-                                    updatePlayers(i, username_)
-                                    break
-                                }
-                        }
-                    }
+            createServerListener()
+        }
+
+        binding.denialButton.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                netHandler.changeRoom(roomId, username)
+                val response = netHandler.getRoomInfo()
+                withContext(Dispatchers.Main) {
+                    binding.players.removeAllViews()
+                    players.clear()
+                    handleNetworkData(response)
                 }
+
+                createServerListener()
+            }
+        }
+
+        binding.votingButton.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                netHandler.initialVoting(roomId, username)
             }
         }
     }
@@ -124,10 +112,10 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
 
         if (netHandler.isConnected())
             Log.d("Connect Fragment", "Disconnect is awaiting")
-            GlobalScope.launch(Dispatchers.IO) {
-                Log.d("Connect Fragment", "thread?")
-                netHandler.disconnectFromServer(roomId, username)
-            }
+        GlobalScope.launch(Dispatchers.IO) {
+            Log.d("Connect Fragment", "thread?")
+            netHandler.disconnectFromServer(roomId, username)
+        }
     }
 
     override fun onDetach() {
@@ -135,10 +123,36 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
         signalman = null
     }
 
+    private fun handleNetworkData(response: String) {
+        val parts = response.split(" ")
+        if (parts.size >= 3) {
+            try {
+                roomId = parts[1].toInt()
+                Log.d("Network", "ID: $roomId")
+
+                val playersNicknames = parts.subList(2, parts.size - 1)
+                playersNicknames.forEach { playerName ->
+                    createPlayersViews(playerName)
+                }
+                players.forEach {
+                    binding.players.addView(it)
+                }
+            } catch (e: NumberFormatException) {
+                Log.e("Client", "Invalid room info format: ${e.message}")
+                throw NumberFormatException()
+            }
+        } else {
+            Log.e("Client", "Invalid room info format")
+        }
+    }
+
     @SuppressLint("SetTextI18n")
-    private fun showNetworkData(playerName: String) {
+    private fun createPlayersViews(playerName: String) {
         val textView = TextView(requireContext()).apply {
-            text = "• $playerName"
+            text = if (playerName != "")
+                "• $playerName"
+            else
+                "•"
             textSize = 24f
             gravity = Gravity.START
             setTextColor(ContextCompat.getColor(requireContext(), R.color.rose))
@@ -151,12 +165,111 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
             }
             layoutParams = params
         }
-        binding.players.addView(textView)
+        players.add(textView)
+    }
+
+    private fun createServerListener() {
+        netHandler.hearServer { eventType, playerName ->
+            lifecycleScope.launch(Dispatchers.Main) {
+                when (eventType) {
+                    context?.getString(R.string.joinMessage) -> {
+                        Log.d("Client", "Player joined: $playerName")
+                        for (i in 0 until players.size)
+                            if (players[i].text == "•") {
+                                addPlayer(i, playerName)
+                                break
+                            }
+                    }
+
+                    context?.getString(R.string.leaveMessage) -> {
+                        Log.d("Client", "Player leaved: $playerName")
+                        for (i in 0 until players.size)
+                            if (players[i].text == "• $playerName") {
+                                removePlayer(i)
+                                break
+                            }
+                        binding.players.removeAllViews()
+                        players.forEach {
+                            binding.players.addView(it)
+                        }
+                    }
+
+                    context?.getString(R.string.needVoting) -> {
+                        showVoteDialog(playerName)
+                    }
+
+                    context?.getString(R.string.accepted),
+                    context?.getString(R.string.declined) -> {
+                        val votedPlayerTextView = players.find { it.text == playerName }
+                        votedPlayerTextView?.apply {
+                            if (eventType == context?.getString(R.string.accepted))
+                                setTextColor(
+                                    ContextCompat.getColor(
+                                        requireContext(),
+                                        R.color.malachite
+                                    )
+                                )
+                            else
+                                setTextColor(
+                                    ContextCompat.getColor(
+                                        requireContext(),
+                                        R.color.red
+                                    )
+                                )
+                            setTypeface(typeface, Typeface.BOLD)
+                        }
+                    }
+
+                    context?.getString(R.string.notStartGame) -> {
+                        players.forEach {
+                            it.apply {
+                                setTextColor(ContextCompat.getColor(
+                                    requireContext(),
+                                    R.color.rose
+                                ))
+                                setTypeface(typeface, Typeface.NORMAL)
+                            }
+                        }
+                        binding.players.removeAllViews()
+                        players.forEach {
+                            binding.players.addView(it)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @SuppressLint("SetTextI18n")
-    private fun updatePlayers(index: Int, playerName: String) {
+    private fun addPlayer(index: Int, playerName: String) {
         if (index < players.size)
             players[index].text = "• $playerName"
+    }
+
+    private fun removePlayer(index: Int) {
+        players[index].text = "•"
+        for (i in index until players.size - 1)
+            if (players[i + 1].text != "•")
+                swap(players, i, i + 1)
+    }
+
+    private fun showVoteDialog(initializerPlayerName: String) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.voting))
+            .setMessage("$initializerPlayerName ${getString(R.string.votingMessage)}")
+            .setPositiveButton(getString(R.string.voteAccept)) { dialog, which ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    netHandler.sendVoteAnswer(roomId, username, getString(R.string.acceptStr))
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(R.string.voteDecline)) { dialog, which ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    netHandler.sendVoteAnswer(roomId, username, getString(R.string.declineStr))
+                }
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
     }
 }

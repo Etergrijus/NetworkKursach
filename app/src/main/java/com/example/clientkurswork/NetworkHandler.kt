@@ -12,15 +12,15 @@ import java.io.PrintWriter
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketException
-import java.net.SocketTimeoutException
 
 enum class ScenarioName {
     CONNECT,
-    DISCONNECT
+    DISCONNECT,
+    DENIAL
 }
 
 class NetworkHandler(private val context: Context) {
-    private val serverAddress = "10.0.2.2"
+    private val serverAddress = "109.62.178.87"
 
     private val serverPort = 12345
 
@@ -30,7 +30,8 @@ class NetworkHandler(private val context: Context) {
 
     private lateinit var output: PrintWriter
 
-    @Volatile private var isRunning = true
+    @Volatile
+    private var isServerListeningRunning = false
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
@@ -43,14 +44,16 @@ class NetworkHandler(private val context: Context) {
 
                 if (isConnected()) {
                     output = PrintWriter(socket.getOutputStream(), true)
-                    output.println("CONNECT $username\n")
+                    output.println("${context.getString(R.string.connectStr)} $username\n")
                     Log.d("Network", "Username sent")
 
                     input = BufferedReader(InputStreamReader(socket.getInputStream()))
                     val response = input.readLine()
                     Log.d("Network", "Answer got")
 
-                    responseCheck(response, ScenarioName.CONNECT)
+                    //responseCheck(response, ScenarioName.CONNECT)
+
+                    response == context.getString(R.string.trueServerAnswer)
                 } else {
                     Log.d("Network", "Don't can connect the socket")
                     false
@@ -73,6 +76,7 @@ class NetworkHandler(private val context: Context) {
                 Log.d("Network", "Received: $response")
 
                 if (response.startsWith(context.getString(R.string.correctRoomInfo))) {
+                    isServerListeningRunning = true
                     response
                 } else {
                     Log.d("Network", "Error of getting room info")
@@ -87,10 +91,9 @@ class NetworkHandler(private val context: Context) {
 
     suspend fun disconnectFromServer(roomId: Int, username: String) {
         withContext(Dispatchers.IO) {
-            isRunning = false
+            isServerListeningRunning = false
             try {
-                val s = StringBuilder("DISCONNECT $roomId $username\n")
-                output.println(s)
+                output.println("${context.getString(R.string.disconnectStr)} $roomId $username\n")
                 //Обработка ответа от сервера вынесена слушателю
             } catch (e: SocketException) {
                 Log.d("Network", "Error on socket disconnection: ${e.message}")
@@ -105,15 +108,15 @@ class NetworkHandler(private val context: Context) {
     fun hearServer(onUpdate: (eventType: String, username: String) -> Unit) {
         scope.launch {
             try {
-                while (isRunning) {
-                        val message = input.readLine()
-                        if (message != null) {
-                            Log.d("Client", "Received: $message, $isRunning")
-                            parseMessage(message, onUpdate)
-                        } else {
-                            Log.d("Client", "Server disconnected")
-                            break
-                        }
+                while (isServerListeningRunning) {
+                    val message = input.readLine()
+                    if (message != null) {
+                        Log.d("Client", "Received: $message")
+                        parseMessage(message, onUpdate)
+                    } else {
+                        Log.d("Client", "Server disconnected")
+                        break
+                    }
                 }
                 Log.d("Client", "Potential-endless loop closed successfully")
             } catch (e: Exception) {
@@ -122,51 +125,62 @@ class NetworkHandler(private val context: Context) {
         }
     }
 
+    suspend fun changeRoom(roomId: Int, username: String) {
+        withContext(Dispatchers.IO) {
+            isServerListeningRunning = false
+            output.println("${context.getString(R.string.denialStr)} $roomId $username\n")
+            //Далее снова работаем с сетью линейно, слушатель закрыт
+        }
+    }
+
+    suspend fun initialVoting(roomId: Int, username: String) {
+        withContext(Dispatchers.IO) {
+            output.println("${context.getString(R.string.startVotingStr)} $roomId $username\n")
+            //Ждём ответов от будущих соперников
+        }
+    }
+
+    suspend fun sendVoteAnswer(roomId: Int, username: String, message: String) {
+        withContext(Dispatchers.IO) {
+            output.println("$message $roomId $username")
+            output.flush()
+        }
+    }
+
     private fun parseMessage(message: String, onUpdate: (String, String) -> Unit) {
         val parts = message.split(" ", "\n")
         when (val prefix = parts[0]) {
-           context.getString(R.string.disconnectOK) -> {
-               try {
-                   if (responseCheck(prefix, ScenarioName.DISCONNECT)) {
-                       Log.d("Network", "Ack got, socket closed")
-                       socket.close()
-                   } else {
-                       Log.d(
-                           "Network", "Did not receive DISCONNECT_OK," +
-                                   "or received an error"
-                       )
-                   }
-               } catch (e: Exception) {
-                   Log.d("Network", "Bad sending of disconnection data: ${e.message}")
-                   throw Exception(e.message)
-               }
-           }
+            context.getString(R.string.disconnectOK) -> {
+                try {
+                    Log.d("Network", "Ack got, socket closed")
+                    socket.close()
+                } catch (e: Exception) {
+                    Log.d("Network", "Bad sending of disconnection data: ${e.message}")
+                    throw Exception(e.message)
+                }
+            }
 
             context.getString(R.string.joinMessage),
-            context.getString(R.string.leaveMessage) -> {
+            context.getString(R.string.leaveMessage),
+            context.getString(R.string.needVoting),
+            context.getString(R.string.accepted),
+            context.getString(R.string.declined),
+            context.getString(R.string.startGame),
+            context.getString(R.string.notStartGame) -> {
                 onUpdate(parts[0], parts[1])
+            }
+
+            context.getString(R.string.newRoomFinding) -> {
+                Log.d("Client", "Ready to change room")
             }
 
             else -> {
                 Log.d("Client", "Unexpected message")
             }
-       }
-    }
-
-    private fun responseCheck(response: String, scenario: ScenarioName): Boolean {
-        val trueAnswer = when (scenario) {
-            ScenarioName.CONNECT -> context.getString(R.string.trueServerAnswer)
-            ScenarioName.DISCONNECT -> context.getString(R.string.disconnectOK)
         }
-
-        Log.d(
-            "Network",
-            "Response: '$response', Expected: '$trueAnswer'"
-        )
-        return response == trueAnswer
     }
 
     fun isConnected(): Boolean {
-        return socket != null && socket.isConnected && !socket.isClosed
+        return socket.isConnected && !socket.isClosed
     }
 }
