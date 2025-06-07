@@ -13,12 +13,6 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketException
 
-enum class ScenarioName {
-    CONNECT,
-    DISCONNECT,
-    DENIAL
-}
-
 class NetworkHandler(private val context: Context) {
     private val serverAddress = "109.62.178.87"
 
@@ -50,8 +44,6 @@ class NetworkHandler(private val context: Context) {
                     input = BufferedReader(InputStreamReader(socket.getInputStream()))
                     val response = input.readLine()
                     Log.d("Network", "Answer got")
-
-                    //responseCheck(response, ScenarioName.CONNECT)
 
                     response == context.getString(R.string.trueServerAnswer)
                 } else {
@@ -125,7 +117,7 @@ class NetworkHandler(private val context: Context) {
         }
     }
 
-    suspend fun changeRoom(roomId: Int, username: String) {
+    suspend fun changeRoom(roomId: Int, username: String)  {
         withContext(Dispatchers.IO) {
             isServerListeningRunning = false
             output.println("${context.getString(R.string.denialStr)} $roomId $username\n")
@@ -136,12 +128,14 @@ class NetworkHandler(private val context: Context) {
     suspend fun initialVoting(roomId: Int, username: String) {
         withContext(Dispatchers.IO) {
             output.println("${context.getString(R.string.startVotingStr)} $roomId $username\n")
+            sendVoteAnswer(roomId, username, context.getString(R.string.acceptStr))
             //Ждём ответов от будущих соперников
         }
     }
 
     suspend fun sendVoteAnswer(roomId: Int, username: String, message: String) {
         withContext(Dispatchers.IO) {
+            Log.d("Network", "My answer - $message")
             output.println("$message $roomId $username")
             output.flush()
         }

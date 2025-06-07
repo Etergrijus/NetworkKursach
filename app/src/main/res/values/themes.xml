@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Base.Theme.ClientKursWork" parent="Theme.AppCompat.Light.NoActionBar">
-
+    <!-- Base application theme. -->
+    <style name="Base.Theme.ClientKurswork" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here. -->
     </style>
+
+    <style name="Theme.ClientKurswork" parent="Base.Theme.ClientKurswork" />
 </resources>
