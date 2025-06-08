@@ -1,51 +1,75 @@
 package com.example.clientkurswork
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.TextView
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import com.example.clientkurswork.databinding.ActivityGameBinding
-import com.example.clientkurswork.ui.theme.ClientKursWorkTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class GameActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGameBinding
+
+    private var players: ArrayList<String> = arrayListOf()
+
+    private var roomId: Int = -1
+
+    private lateinit var netHandler: NetworkHandler
+
+    private lateinit var activePlayer: String
+
+    private var diceRoll = 0
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
         val username = this.intent.getStringExtra("Username").toString()
         Log.d("GameActivity", username)
-        binding.helloText.text = "Игра началась. Вы - $username"
+
+        roomId = intent.getIntExtra("RoomID", -1)
+
+        setContentView(binding.root)
+
+        players = this.intent.getStringArrayListExtra("Usernames")!!
+        activePlayer = players[0]
+
+        val app = application as MyApp
+        netHandler = app.netHandler
+
+        getMoves()
+
+        binding.makeMoveButton.setOnClickListener {
+            if (username != activePlayer)
+                return@setOnClickListener
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                netHandler.sendMoveMessage(roomId)
+            }
+        }
     }
-}
 
-@Composable
-fun Greeting2(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    @SuppressLint("SetTextI18n")
+    private fun getMoves() {
+        netHandler.hearGame { eventType, username, result ->
+            lifecycleScope.launch(Dispatchers.Main) {
+                when (eventType) {
+                    baseContext.getString(R.string.rolled) -> {
+                        Log.d("GameActivity", "Dice rolled by $username: $result")
+                        activePlayer = username
+                        diceRoll = result
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview2() {
-    ClientKursWorkTheme {
-        Greeting2("Android")
+                        binding.currentPlayerText.text =
+                            baseContext.getString(R.string.currentPlayer) + activePlayer
+                        binding.diceResultText.text =
+                            baseContext.getString(R.string.diceResult) + diceRoll.toString()
+                    }
+                }
+            }
+        }
     }
 }

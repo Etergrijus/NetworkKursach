@@ -117,7 +117,7 @@ class NetworkHandler(private val context: Context) {
         }
     }
 
-    suspend fun changeRoom(roomId: Int, username: String)  {
+    suspend fun changeRoom(roomId: Int, username: String) {
         withContext(Dispatchers.IO) {
             isServerListeningRunning = false
             output.println("${context.getString(R.string.denialStr)} $roomId $username\n")
@@ -159,7 +159,6 @@ class NetworkHandler(private val context: Context) {
             context.getString(R.string.needVoting),
             context.getString(R.string.accepted),
             context.getString(R.string.declined),
-            context.getString(R.string.startGame),
             context.getString(R.string.notStartGame) -> {
                 onUpdate(parts[0], parts[1])
             }
@@ -168,11 +167,82 @@ class NetworkHandler(private val context: Context) {
                 Log.d("Client", "Ready to change room")
             }
 
+            context.getString(R.string.startGame) -> {
+                isServerListeningRunning = false
+                onUpdate(parts[0], parts[1])
+            }
+
             else -> {
                 Log.d("Client", "Unexpected message")
             }
         }
     }
+
+    fun hearGame(onUpdate: (eventType: String, username: String, result: Int) -> Unit) {
+        isServerListeningRunning = true
+        scope.launch {
+            try {
+                while (isServerListeningRunning) {
+                    val message = input.readLine()
+                    if (message != null) {
+                        Log.d("Client", "Received: $message")
+                        processServerMessage(message, onUpdate)
+                    } else {
+                        Log.d("Client", "Server disconnected")
+                        break
+                    }
+                }
+                Log.d("Client", "Potential-endless loop closed successfully")
+            } catch (e: Exception) {
+                Log.d("Client", "Error in read loop: ${e.message}")
+            }
+        }
+    }
+
+    suspend fun sendMoveMessage(roomId: Int) {
+        withContext(Dispatchers.IO) {
+            Log.d("Game", "${context.getString(R.string.moveStr)} $roomId")
+            output.println("${context.getString(R.string.moveStr)} $roomId")
+            output.flush()
+        }
+    }
+
+    private fun processServerMessage(
+        message: String,
+        onUpdate: (eventType: String, username: String, result: Int) -> Unit
+    ) {
+        val message_ = message.trimEnd()
+        val parts = message_.split(" ")
+        if (parts.size == 3 && parts[0] == context.getString(R.string.rolled)) {
+            val nick = parts[1]
+            val diceResult = parts[2].toInt()
+            onUpdate(context.getString(R.string.rolled), nick, diceResult) // Вызываем колбэк
+        } else {
+            Log.d("Game", "Unexpected message: $message")
+        }
+    }
+
+    /*suspend fun getDiceResult() : Pair<String, Int> {
+        return withContext(Dispatchers.IO) {
+            var response = input.readLine()
+            response = response.trimEnd()
+            val parts = response.split(" ")
+            if (parts.size != 3) {
+                Log.d("Game", "Unexpected roll dice: $response")
+                throw Exception("Unexpected roll dice")
+            }
+
+            if (parts[0] == context.getString(R.string.rolled)) {
+                val nick = parts[1]
+                val diceResult = parts[2].toInt()
+
+                Pair(nick, diceResult)
+            } else {
+                Log.d("Game", "Unexpected roll dice: $response")
+                throw Exception("Unexpected roll dice")
+            }
+        }
+    }*/
 
     fun isConnected(): Boolean {
         return socket.isConnected && !socket.isClosed

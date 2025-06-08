@@ -244,11 +244,21 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
                         }
                         updatePlayersViews()
                     }
+
                     context?.getString(R.string.startGame) -> {
                         delay(1000)
                         Log.d("Client", "We are starting the game!!")
                         val intent = Intent(binding.root.context, GameActivity::class.java)
                         intent.putExtra("Username", username)
+                        intent.putExtra("RoomID", roomId)
+
+                        val usernames = ArrayList<String>()
+                        players.forEach {
+                            usernames.add(it.username)
+                        }
+
+                        intent.putStringArrayListExtra("Usernames", usernames)
+
                         binding.root.context.startActivity(intent)
                     }
                 }

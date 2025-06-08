@@ -36,10 +36,15 @@
     <string name="acceptStr">ACCEPT</string>
     <string name="declineStr">DECLINE</string>
 
+    <string name="moveStr">MOVE</string>
+    <string name="rolled">Rolled</string>
 
     <string name="voting">Голосование</string>
     <string name="votingMessage">предлагает начать игру</string>
     <string name="voteAccept">Согласиться</string>
     <string name="voteDecline">Отказаться</string>
     <string name="title_activity_game">GameActivity</string>
+
+    <string name="currentPlayer">Сейчас ходит: </string>
+    <string name="diceResult">Кубик говорит: </string>
 </resources>

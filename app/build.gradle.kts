@@ -54,6 +54,12 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.espresso.core)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.ui)
+    implementation(libs.androidx.material)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation (libs.ui.tooling)
+    implementation(libs.androidx.foundation.layout.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
