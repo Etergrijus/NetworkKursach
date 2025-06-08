@@ -5,13 +5,47 @@
 #include "handlers.h"
 #include "Server.h"
 
-NetworkScenario defineScenario(const std::string& str) {
+std::variant<NetworkScenario, VotingAnswer, GameMessage> defineScenario(const std::string &str) {
     if (str == CONNECT_STR)
         return NetworkScenario::CONNECT;
     if (str == DISCONNECT_STR)
         return NetworkScenario::DISCONNECT;
-    else
-        return NetworkScenario::UNKNOWN;
+    if (str == DENIAL_STR)
+        return NetworkScenario::DENIAL;
+    if (str == START_VOTING_STR)
+        return NetworkScenario::START_VOTING;
+    if (str == ACCEPT_STR)
+        return VotingAnswer::ACCEPT;
+    if (str == DECLINE_STR)
+        return VotingAnswer::DECLINE;
+    if (str == MOVE_STR)
+        return GameMessage::MOVE;
+
+    return NetworkScenario::UNKNOWN;
+}
+
+//Кортеж с двумя значениями:
+// - id - int
+// - username - string
+//Гарантируется, что больше параметров нет, иначе данная функция
+//выкинет logic_error
+std::tuple<int, std::string> parseMessageData(const std::u8string &data) {
+    std::string dataStr = Server::u8StringToString(data);
+    std::istringstream iss(dataStr);
+    int roomId;
+    iss >> roomId;
+    std::string username;
+    iss >> username;
+
+    if (!iss.eof())
+        throw std::logic_error("Bad data message format");
+
+    return std::make_tuple(roomId, username);
+}
+
+void votingInterrupt(Room* room, Server& server) {
+    room->interruptVoting();
+    server.allPlayersSending(room, NOT_START_GAME, u8"", false);
 }
 
 Message::Message() = default;
@@ -29,8 +63,10 @@ void ConnectionNetworkHandler::handleMessage(const Message &message, const std::
     //что подключился к серверу
     server.startWrite(socket, TRUE_SERVER_ANSWER);
 
-    auto room = server.getLobby().findRoom(username);
+    auto room = server.getLobby().findRoom(username, socket);
     if (room) {
+        server.allPlayersSending(room, JOIN_MESSAGE, username);
+
         auto roomInfo = Server::buildRoomInfo(room);
         std::cout << "Room info: " << roomInfo << std::endl; // Логирование
         server.startWrite(socket, roomInfo);
@@ -41,34 +77,107 @@ void ConnectionNetworkHandler::handleMessage(const Message &message, const std::
 void DisconnectionNetworkHandler::handleMessage(const Message &message,
                                                 const std::shared_ptr<tcpAlias::socket> &socket,
                                                 Server &server) {
-    std::cout << "Received: " << Server::u8StringToString(message.data) << std::endl;
-
-    std::string dataStr = Server::u8StringToString(message.data);
-    std::istringstream iss(dataStr);
-    int roomId;
-    iss >> roomId;
-    std::string username;
-    iss >> username;
-
-   /* auto it = message.data.begin();
-    std::u8string idStr(it, it = std::find(it, message.data.end(), ' '));
-    std::cout << Server::u8StringToString(idStr) << std::endl;
-    auto roomId = std::stoi(Server::u8StringToString(idStr));*/
+    auto data = parseMessageData(message.data);
     //Игрок выходит до того, как найти комнату
-    if (roomId == -1) {
+    if (std::get<0>(data) == -1) {
+        std::cout << "impatient" << std::endl;
         Server::closeSocket(socket);
         return;
     }
 
-/*    it++;
-    std::u8string username(it, message.data.end());*/
-
-    auto room = server.getLobby().getRoomById(roomId);
+    auto room = server.getLobby().getRoomById(std::get<0>(data));
     if (room) {
-        room->exitFromRoom(Server::stringToU8String(username));
+        auto usernameUtf = Server::stringToU8String(std::get<1>(data));
+        room->exitFromRoom(usernameUtf);
         server.startWrite(socket, DISCONNECT_OK);
+        server.allPlayersSending(room, LEAVE_MESSAGE, usernameUtf);
+
+        //votingInterrupt(room, server);
         Server::closeSocket(socket);
     } else
+        std::cerr << "Incorrect forwardId" << std::endl;
+}
+
+void DenialNetworkHandler::handleMessage(const Message &message,
+                                         const std::shared_ptr<tcpAlias::socket> &socket, Server &server) {
+    auto data = parseMessageData(message.data);
+
+    server.startWrite(socket, NEW_ROOM_FINDING);
+    auto usernameUtf = Server::stringToU8String(std::get<1>(data));
+    auto exRoom = server.getLobby().getRoomById(std::get<0>(data));
+    //"Отказник" вышел
+    exRoom->exitFromRoom(usernameUtf);
+    server.allPlayersSending(exRoom, LEAVE_MESSAGE, usernameUtf);
+    votingInterrupt(exRoom, server);
+
+    auto room =
+            server.getLobby().findRoomForDenialist(std::get<0>(data), usernameUtf, socket);
+    if (room) {
+        auto roomInfo = Server::buildRoomInfo(room);
+        std::cout << "Room info: " << roomInfo << std::endl; // Логирование
+        server.startWrite(socket, roomInfo);
+        std::cout << "ROOM_INFO sent." << std::endl;
+        server.allPlayersSending(room, JOIN_MESSAGE, usernameUtf);
+    }
+}
+
+void StartVotingHandler::handleMessage(const Message &message,
+                                       const std::shared_ptr<tcpAlias::socket> &socket, Server &server) {
+    auto data = parseMessageData(message.data);
+    auto usernameUtf = Server::stringToU8String(std::get<1>(data));
+    auto room = server.getLobby().getRoomById(std::get<0>(data));
+
+    if (room) {
+        server.allPlayersSending(room, NEED_VOTING, usernameUtf);
+        std::cout << std::get<1>(data) << " starts the vote" << std::endl;
+
+        room->startVoting();
+    } else
         std::cerr << "Incorrect id" << std::endl;
+}
+
+void VotingHandler::handleMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
+                                  Server &server) {
+    auto data = parseMessageData(message.data);
+    auto usernameUtf = Server::stringToU8String(std::get<1>(data));
+    auto room = server.getLobby().getRoomById(std::get<0>(data));
+
+    if (room) {
+        bool accepted = (message.voteScenario == VotingAnswer::ACCEPT);
+        if (accepted) {
+            std::cout << std::get<1>(data) << " accepted" << std::endl;
+            room->accepted();
+        } else {
+            std::cout << std::get<1>(data) << " declined" << std::endl;
+            room->declined();
+        }
+        server.allPlayersSending(room, accepted ? ACCEPTED : DECLINED, usernameUtf, false); // Send message
+
+        // Check if voting is finished
+        if (room->isEndVoting()) {
+            if (room->endVoting()) {
+                server.allPlayersSending(room, START_GAME, u8"", false);
+                room->setGameStarted(true); //  Add setter
+                server.startGame(room);
+                std::cout << "Started the game" << std::endl;
+            } else {
+                server.allPlayersSending(room, NOT_START_GAME, u8"", false);
+                room->setGameStarted(false);
+                std::cout << "Declined in room " << std::get<0>(data) << std::endl;
+            }
+        }
+    } else {
+        std::cerr << "Incorrect id" << std::endl;
+    }
+}
+
+void GameHandler::handleMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
+                                Server &server) {
+    auto roomId = stoi(Server::u8StringToString(message.data));
+    auto it = server.getGames().find(roomId);
+
+    if (it != server.getGames().end()) {
+        it->second->rollDice();
+    }
 }
 

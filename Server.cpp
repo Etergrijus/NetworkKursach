@@ -26,8 +26,6 @@ void Server::handleAccept(const std::shared_ptr<tcpAlias::socket> &socket, const
         std::cout << "Connected " << socket->remote_endpoint().address().to_string() << '\n';
         // Начинаем чтение данных от клиента
         startRead(socket);
-        // Принимаем следующее соединение
-        //startAccept();
     } else {
         std::cerr << "Accept error: " << error.message() << std::endl;
     }
@@ -56,6 +54,7 @@ void Server::handleRead(const std::shared_ptr<tcpAlias::socket> &socket, const b
         std::u8string rawMessage(buffer->data(), bytes);
         Message msg = parseMessage(rawMessage);
 
+        //Неизвестные значения пишутся в scenario, отлавливаем их оттуда
         if (msg.scenario != NetworkScenario::UNKNOWN) {
             handleMessage(msg, socket);
         } else {
@@ -75,25 +74,39 @@ void Server::handleMessage(const Message &message, const std::shared_ptr<tcpAlia
     auto it = handlerImpls.find(message.scenario);
     if (it != handlerImpls.end()) {
         it->second->handleMessage(message, socket, *this);
-    } else {
-        std::cerr << "handleMessage: No handler for message type" << std::endl;
-        //  Отправьте сообщение об ошибке клиенту (если необходимо)
+        return;
     }
+
+    it = handlerImpls.find(message.voteScenario);
+    if (it != handlerImpls.end()) {
+        it->second->handleMessage(message, socket, *this);
+        return;
+    }
+
+    it = handlerImpls.find(message.gameScenario);
+    if (it != handlerImpls.end()) {
+        it->second->handleMessage(message, socket, *this);
+        return;
+    }
+
+    std::cerr << "handleMessage: No handler for message type" << std::endl;
 }
 
 void Server::startWrite(const std::shared_ptr<tcpAlias::socket> &socket, const std::string &message) {
-    boost::asio::async_write(
-            *socket,
-            boost::asio::buffer(message),
-            [this, socket]
-                    (const boost::system::error_code& error, size_t bytes) {
-                handleWrite(socket, error);
-            });
+    if (socket && socket->is_open()) {
+        boost::asio::async_write(
+                *socket,
+                boost::asio::buffer(message),
+                [this, socket]
+                        (const boost::system::error_code &error, size_t bytes) {
+                    handleWrite(socket, error);
+                });
+    }
 }
 
 void Server::handleWrite(const std::shared_ptr<tcpAlias::socket> &socket, const boost::system::error_code &error) {
     if (!error) {
-        std::cout << "Answer sent" << std::endl;
+        //std::cout << "Answer sent" << std::endl;
     } else if (error == boost::asio::error::eof) {
         //closeSocket(socket);
     } else {
@@ -117,15 +130,42 @@ std::string Server::buildRoomInfo(Room *room) {
     ss << CORRECT_ROOM_INFO << " " << room->getID() << " ";
 
     for (const auto& player : room->getPlayers()) {
-        ss << u8StringToString(player) << " ";
+        ss << u8StringToString(player.username) << " ";
     }
 
-    ss << '\n';
-    return ss.str();
+    auto resVal = ss.str();
+    resVal.pop_back();
+    resVal += "\n";
+    return resVal;
 }
 
 Lobby& Server::getLobby() {
     return lobby;
+}
+
+void Server::allPlayersSending(Room* room, const std::string &message, const std::u8string& playerName,
+                               bool isEqualCheckNeed) {
+    for (const auto& player: room->getPlayers()) {
+        if (player.socket && !player.socket->is_open()) {
+            room->exitFromRoom(player.username);
+            allPlayersSending(room, LEAVE_MESSAGE, player.username);
+        }
+    }
+
+    for (const auto& player: room->getPlayers()) {
+        if (!isEqualCheckNeed || player.username != playerName) {
+            startWrite(player.socket, message + " " + u8StringToString(playerName) + "\n");
+        }
+    }
+}
+
+void Server::startGame(Room *room) {
+    activeGames[room->getID()] = std::make_unique<Game>(*this, *room);
+    activeGames[room->getID()]->startGame();
+}
+
+std::unordered_map<int, std::unique_ptr<Game>>& Server::getGames() {
+    return activeGames;
 }
 
 std::string Server::u8StringToString(const std::u8string &u8str) {
@@ -146,6 +186,13 @@ std::u8string Server::stringToU8String(const std::string &str) {
 void Server::registerHandlerImpls() {
     handlerImpls[NetworkScenario::CONNECT] = std::make_unique<ConnectionNetworkHandler>();
     handlerImpls[NetworkScenario::DISCONNECT] = std::make_unique<DisconnectionNetworkHandler>();
+    handlerImpls[NetworkScenario::DENIAL] = std::make_unique<DenialNetworkHandler>();
+    handlerImpls[NetworkScenario::START_VOTING] = std::make_unique<StartVotingHandler>();
+
+    handlerImpls[VotingAnswer::ACCEPT] = std::make_unique<VotingHandler>();
+    handlerImpls[VotingAnswer::DECLINE] = std::make_unique<VotingHandler>();
+
+    handlerImpls[GameMessage::MOVE] = std::make_unique<GameHandler>();
 }
 
 Message Server::parseMessage(const std::u8string &rawMessage) {
@@ -155,7 +202,18 @@ Message Server::parseMessage(const std::u8string &rawMessage) {
 
     std::string scenarioStr;
     ss >> scenarioStr;
-    msg.scenario = defineScenario(scenarioStr);
+
+    auto scenario = defineScenario(scenarioStr);
+    if (std::holds_alternative<NetworkScenario>(scenario))
+        msg.scenario = std::get<NetworkScenario>(scenario);
+    else if (std::holds_alternative<VotingAnswer>(scenario))
+        msg.voteScenario = std::get<VotingAnswer>(scenario);
+    else if (std::holds_alternative<GameMessage>(scenario))
+        msg.gameScenario = std::get<GameMessage>(scenario);
+    else {
+        std::cerr << "Unknown scenario, std::variant failed" << std::endl;
+        throw std::runtime_error("std::variant bad");
+    }
 
     std::string data;
     std::getline(ss >> std::ws, data);

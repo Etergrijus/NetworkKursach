@@ -10,4 +10,4 @@ include_directories(${BOOST_INCLUDE_DIR})
 
 link_libraries(ws2_32 wsock32)
 
-add_executable(ServerKurssWork main.cpp Lobby.h Room.h handlers.h Server.h handlers.cpp Server.cpp) # Добавьте все ваши .cpp файлы
+add_executable(ServerKurssWork main.cpp Lobby.h Room.h handlers.h Server.h handlers.cpp Server.cpp Game.cpp Game.h) # Добавьте все ваши .cpp файлы

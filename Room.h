@@ -4,6 +4,21 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
+
+#include <boost/asio.hpp>
+
+using tcpAlias = boost::asio::ip::tcp;
+
+struct Player {
+    std::u8string username;
+    std::shared_ptr<tcpAlias::socket> socket;
+
+    Player() : socket(nullptr) {};
+
+    Player(std::u8string _username, const std::shared_ptr<tcpAlias::socket> &sock) :
+            socket(sock), username(std::move(_username)) {};
+};
 
 class Room {
 public:
@@ -13,29 +28,40 @@ public:
         isStarted = false;
         nPlayers = 0;
 
-        id++;
+        forwardId++;
+        thisRoomId = forwardId;
     }
 
-    Room* get() {
+    Room *get() {
         return this;
     }
 
-    int getID() const {
-        return id;
+    static int getForwardID() {
+        return forwardId;
     }
 
-    std::vector<std::u8string> getPlayers() {
+    int getID() {
+        return thisRoomId;
+    }
+
+    std::vector<Player> getPlayers() {
         return players;
     }
 
-    void addPlayer(const std::u8string& username) {
-        nPlayers++;
-        players[nPlayers - 1] = username;
+    void setPlayers(const int playersInGame) {
+        players.resize(playersInGame);
     }
 
-    void exitFromRoom(const std::u8string& username) {
+    void addPlayer(const std::u8string &username, const std::shared_ptr<tcpAlias::socket> &socket) {
+        nPlayers++;
+        players[nPlayers - 1] = Player(username, socket);
+    }
+
+    void exitFromRoom(const std::u8string &username) {
         nPlayers--;
-        players.erase(std::remove(players.begin(), players.end(), username),players.end());
+        players.erase(std::remove_if(players.begin(), players.end(),
+                                     [username](Player &p) { return p.username == username; }),
+                      players.end());
         players.resize(maxPlayers);
     }
 
@@ -51,21 +77,59 @@ public:
         return isStarted;
     }
 
-/*    void startVoting() {
+    void startVoting() {
         isVotedNow = true;
-    }*/
+    }
+
+    void interruptVoting() {
+        nVotedPlayers = 0;
+        nVoteAcceptedPlayer = 0;
+        isVotedNow = false;
+    }
+
+    void accepted() {
+        nVoteAcceptedPlayer++;
+        nVotedPlayers++;
+    }
+
+    void declined() {
+        nVotedPlayers++;
+    }
+
+    bool isEndVoting() const {
+        return nVotedPlayers == nPlayers;
+    }
+
+    //Возвращает true, если игроки проголосовали за начало игры
+    //и ложь в противном случае
+    bool endVoting() {
+        auto resVal = nPlayers > 1 && nVotedPlayers == nVoteAcceptedPlayer;
+        nVotedPlayers = 0;
+        nVoteAcceptedPlayer = 0;
+        isVotedNow = false;
+        return resVal;
+    }
+
+    void setGameStarted(bool started) {
+        isStarted = started;
+    }
 
     //Старт игры
     //Обрабока голосования
 
 private:
-    std::vector<std::u8string> players;
+    std::vector<Player> players;
     bool isVotedNow;
     bool isStarted;
     int nPlayers;
-    inline static int id = 0;
+    inline static int forwardId = 0;
+    int thisRoomId;
+
+    int nVoteAcceptedPlayer = 0;
+    int nVotedPlayers = 0;
 
     const int maxPlayers = 4;
+
 };
 
 #endif //SERVERKURSSWORK_ROOM_H
