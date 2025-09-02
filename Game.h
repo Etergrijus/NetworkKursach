@@ -7,11 +7,13 @@
 
 #define ROLLED "Rolled"
 
-class Server;
+//class Server;
 
 class Game {
 public:
-    Game(Server& serv, Room& room_);
+    //Game(Server& serv, Room& room_);
+
+    explicit Game(Room& room_);
 
     void startGame();
 
@@ -20,7 +22,7 @@ public:
     void foo();
 
 private:
-    Server& server;
+    //Server& server;
     Room& room;
     std::mt19937 engine;
     long long currentPlayerNumber = -1;

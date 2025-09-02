@@ -44,7 +44,7 @@ public:
         return thisRoomId;
     }
 
-    std::vector<Player> getPlayers() {
+    const std::vector<Player>& getPlayers() const {
         return players;
     }
 
@@ -87,11 +87,15 @@ public:
         isVotedNow = false;
     }
 
+    //Обрабатывает игрока, который проголосовал
+    //ЗА начало игры
     void accepted() {
         nVoteAcceptedPlayer++;
         nVotedPlayers++;
     }
 
+    //Обрабатывает игрока, который проголосовал
+    //ПРОТИВ начала игры
     void declined() {
         nVotedPlayers++;
     }
@@ -122,7 +126,10 @@ private:
     bool isVotedNow;
     bool isStarted;
     int nPlayers;
+    //ID последней созданной комнаты, "наконечной", если рассматривать
+    //лобби как вектор
     inline static int forwardId = 0;
+    //ID конкретной (данной) комнаты
     int thisRoomId;
 
     int nVoteAcceptedPlayer = 0;

@@ -77,6 +77,13 @@ build CMakeFiles/ServerKurssWork.dir/Game.cpp.obj: CXX_COMPILER__ServerKurssWork
   OBJECT_DIR = CMakeFiles\ServerKurssWork.dir
   OBJECT_FILE_DIR = CMakeFiles\ServerKurssWork.dir
 
+build CMakeFiles/ServerKurssWork.dir/GameServer.cpp.obj: CXX_COMPILER__ServerKurssWork_Debug D$:/CLionProjects/ServerKurssWork/cmake-build-debug/GameServer.cpp || cmake_object_order_depends_target_ServerKurssWork
+  DEP_FILE = CMakeFiles\ServerKurssWork.dir\GameServer.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always -std=gnu++20
+  INCLUDES = -ID:/dev/boost/boost_1_88_0
+  OBJECT_DIR = CMakeFiles\ServerKurssWork.dir
+  OBJECT_FILE_DIR = CMakeFiles\ServerKurssWork.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target ServerKurssWork
@@ -85,7 +92,7 @@ build CMakeFiles/ServerKurssWork.dir/Game.cpp.obj: CXX_COMPILER__ServerKurssWork
 #############################################
 # Link the executable ServerKurssWork.exe
 
-build ServerKurssWork.exe: CXX_EXECUTABLE_LINKER__ServerKurssWork_Debug CMakeFiles/ServerKurssWork.dir/main.cpp.obj CMakeFiles/ServerKurssWork.dir/handlers.cpp.obj CMakeFiles/ServerKurssWork.dir/Server.cpp.obj CMakeFiles/ServerKurssWork.dir/Game.cpp.obj
+build ServerKurssWork.exe: CXX_EXECUTABLE_LINKER__ServerKurssWork_Debug CMakeFiles/ServerKurssWork.dir/main.cpp.obj CMakeFiles/ServerKurssWork.dir/handlers.cpp.obj CMakeFiles/ServerKurssWork.dir/Server.cpp.obj CMakeFiles/ServerKurssWork.dir/Game.cpp.obj CMakeFiles/ServerKurssWork.dir/GameServer.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lws2_32  -lwsock32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\ServerKurssWork.dir

@@ -5,7 +5,7 @@
 #include "handlers.h"
 #include "Server.h"
 
-std::variant<NetworkScenario, VotingAnswer, GameMessage> defineScenario(const std::string &str) {
+std::variant<NetworkScenario, VotingAnswer> defineScenario(const std::string &str) {
     if (str == CONNECT_STR)
         return NetworkScenario::CONNECT;
     if (str == DISCONNECT_STR)
@@ -18,13 +18,11 @@ std::variant<NetworkScenario, VotingAnswer, GameMessage> defineScenario(const st
         return VotingAnswer::ACCEPT;
     if (str == DECLINE_STR)
         return VotingAnswer::DECLINE;
-    if (str == MOVE_STR)
-        return GameMessage::MOVE;
 
     return NetworkScenario::UNKNOWN;
 }
 
-//Кортеж с двумя значениями:
+//Возвращает кортеж с двумя значениями:
 // - id - int
 // - username - string
 //Гарантируется, что больше параметров нет, иначе данная функция
@@ -54,8 +52,8 @@ Message::Message(NetworkScenario type, std::u8string str) : scenario(type), data
 
 NetworkHandler::~NetworkHandler() noexcept = default;
 
-void ConnectionNetworkHandler::handleMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
-                                             Server &server) {
+void ConnectionNetworkHandler::handleNetworkMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
+                                                    Server &server) {
     std::u8string username = message.data;
     std::cout << "Player " << Server::u8StringToString(message.data) << " knocks on the door" << std::endl;
 
@@ -74,9 +72,9 @@ void ConnectionNetworkHandler::handleMessage(const Message &message, const std::
     }
 }
 
-void DisconnectionNetworkHandler::handleMessage(const Message &message,
-                                                const std::shared_ptr<tcpAlias::socket> &socket,
-                                                Server &server) {
+void DisconnectionNetworkHandler::handleNetworkMessage(const Message &message,
+                                                       const std::shared_ptr<tcpAlias::socket> &socket,
+                                                       Server &server) {
     auto data = parseMessageData(message.data);
     //Игрок выходит до того, как найти комнату
     if (std::get<0>(data) == -1) {
@@ -98,8 +96,8 @@ void DisconnectionNetworkHandler::handleMessage(const Message &message,
         std::cerr << "Incorrect forwardId" << std::endl;
 }
 
-void DenialNetworkHandler::handleMessage(const Message &message,
-                                         const std::shared_ptr<tcpAlias::socket> &socket, Server &server) {
+void DenialNetworkHandler::handleNetworkMessage(const Message &message,
+                                                const std::shared_ptr<tcpAlias::socket> &socket, Server &server) {
     auto data = parseMessageData(message.data);
 
     server.startWrite(socket, NEW_ROOM_FINDING);
@@ -121,8 +119,8 @@ void DenialNetworkHandler::handleMessage(const Message &message,
     }
 }
 
-void StartVotingHandler::handleMessage(const Message &message,
-                                       const std::shared_ptr<tcpAlias::socket> &socket, Server &server) {
+void StartVotingHandler::handleNetworkMessage(const Message &message,
+                                              const std::shared_ptr<tcpAlias::socket> &socket, Server &server) {
     auto data = parseMessageData(message.data);
     auto usernameUtf = Server::stringToU8String(std::get<1>(data));
     auto room = server.getLobby().getRoomById(std::get<0>(data));
@@ -136,8 +134,8 @@ void StartVotingHandler::handleMessage(const Message &message,
         std::cerr << "Incorrect id" << std::endl;
 }
 
-void VotingHandler::handleMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
-                                  Server &server) {
+void VotingHandler::handleNetworkMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
+                                         Server &server) {
     auto data = parseMessageData(message.data);
     auto usernameUtf = Server::stringToU8String(std::get<1>(data));
     auto room = server.getLobby().getRoomById(std::get<0>(data));
@@ -151,15 +149,17 @@ void VotingHandler::handleMessage(const Message &message, const std::shared_ptr<
             std::cout << std::get<1>(data) << " declined" << std::endl;
             room->declined();
         }
-        server.allPlayersSending(room, accepted ? ACCEPTED : DECLINED, usernameUtf, false); // Send message
+        //Рассылаем игрокам (кроме проголосовавшего) ответ
+        server.allPlayersSending(room, accepted ? ACCEPTED : DECLINED,
+                                 usernameUtf, false);
 
-        // Check if voting is finished
+        //Проверяем, окончилось ли голосование
         if (room->isEndVoting()) {
             if (room->endVoting()) {
                 server.allPlayersSending(room, START_GAME, u8"", false);
                 room->setGameStarted(true); //  Add setter
                 server.startGame(room);
-                std::cout << "Started the game" << std::endl;
+                std::cout << "Started the game in room " << std::get<0>(data) << std::endl;
             } else {
                 server.allPlayersSending(room, NOT_START_GAME, u8"", false);
                 room->setGameStarted(false);
@@ -171,13 +171,13 @@ void VotingHandler::handleMessage(const Message &message, const std::shared_ptr<
     }
 }
 
-void GameHandler::handleMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
-                                Server &server) {
+/*void GameHandler::handleNetworkMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket,
+                                       Server &server) {
     auto roomId = stoi(Server::u8StringToString(message.data));
     auto it = server.getGames().find(roomId);
 
     if (it != server.getGames().end()) {
         it->second->rollDice();
     }
-}
+}*/
 

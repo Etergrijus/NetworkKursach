@@ -73,23 +73,25 @@ void Server::handleRead(const std::shared_ptr<tcpAlias::socket> &socket, const b
 void Server::handleMessage(const Message &message, const std::shared_ptr<tcpAlias::socket> &socket) {
     auto it = handlerImpls.find(message.scenario);
     if (it != handlerImpls.end()) {
-        it->second->handleMessage(message, socket, *this);
+        it->second->handleNetworkMessage(message, socket, *this);
         return;
     }
 
     it = handlerImpls.find(message.voteScenario);
     if (it != handlerImpls.end()) {
-        it->second->handleMessage(message, socket, *this);
+        it->second->handleNetworkMessage(message, socket, *this);
         return;
     }
 
+/*
     it = handlerImpls.find(message.gameScenario);
     if (it != handlerImpls.end()) {
-        it->second->handleMessage(message, socket, *this);
+        it->second->handleNetworkMessage(message, socket, *this);
         return;
     }
+*/
 
-    std::cerr << "handleMessage: No handler for message type" << std::endl;
+    std::cerr << "handleNetworkMessage: No handler for message type" << std::endl;
 }
 
 void Server::startWrite(const std::shared_ptr<tcpAlias::socket> &socket, const std::string &message) {
@@ -160,11 +162,18 @@ void Server::allPlayersSending(Room* room, const std::string &message, const std
 }
 
 void Server::startGame(Room *room) {
-    activeGames[room->getID()] = std::make_unique<Game>(*this, *room);
-    activeGames[room->getID()]->startGame();
+/*    activeGames[room->getID()] = std::make_unique<Game>(*room);
+    activeGames[room->getID()]->startGame();*/
+
+    //Останавливает callback'и чтения в этом классе для сокетов игроков
+    //в начинающейся игры. Передаём управление сетью игровому серверу
+    for (auto &player: room->getPlayers())
+        player.socket->cancel();
+
+    activeGames[room->getID()] = std::make_unique<GameServer>(*room);
 }
 
-std::unordered_map<int, std::unique_ptr<Game>>& Server::getGames() {
+std::unordered_map<int, std::unique_ptr<GameServer>>& Server::getGames() {
     return activeGames;
 }
 
@@ -191,8 +200,6 @@ void Server::registerHandlerImpls() {
 
     handlerImpls[VotingAnswer::ACCEPT] = std::make_unique<VotingHandler>();
     handlerImpls[VotingAnswer::DECLINE] = std::make_unique<VotingHandler>();
-
-    handlerImpls[GameMessage::MOVE] = std::make_unique<GameHandler>();
 }
 
 Message Server::parseMessage(const std::u8string &rawMessage) {
@@ -208,8 +215,6 @@ Message Server::parseMessage(const std::u8string &rawMessage) {
         msg.scenario = std::get<NetworkScenario>(scenario);
     else if (std::holds_alternative<VotingAnswer>(scenario))
         msg.voteScenario = std::get<VotingAnswer>(scenario);
-    else if (std::holds_alternative<GameMessage>(scenario))
-        msg.gameScenario = std::get<GameMessage>(scenario);
     else {
         std::cerr << "Unknown scenario, std::variant failed" << std::endl;
         throw std::runtime_error("std::variant bad");

@@ -4,7 +4,11 @@
 
 #include <random>
 
-Game::Game(Server &serv, Room &room_) : server(serv), room(room_) {
+/*Game::Game(Server &serv, Room &room_) : server(serv), room(room_) {
+    engine.seed(std::time(nullptr));
+}*/
+
+Game::Game(Room& room_) : room(room_) {
     engine.seed(std::time(nullptr));
 }
 
@@ -22,7 +26,7 @@ void Game::startGame() {
 void Game::rollDice() {
     currentPlayerNumber++;
 
-    std::uniform_int_distribution<short> dice(1, 6);
+    std::uniform_int_distribution<char> dice(1, 6);
     auto result = dice(engine);
 
     auto players = room.getPlayers();
@@ -31,6 +35,6 @@ void Game::rollDice() {
     ss << ROLLED << " " << Server::u8StringToString(players[currentPlayerNumber % players.size()].username)
        << " " << result;
 
-    server.allPlayersSending(&room, ss.str(), u8"", false);
+    //server.allPlayersSending(&room, ss.str(), u8"", false);
     std::cout << ss.str() << std::endl;
 }

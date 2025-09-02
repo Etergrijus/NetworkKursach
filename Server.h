@@ -8,7 +8,7 @@
 #include "Lobby.h"
 
 #include "handlers.h"
-#include "Game.h"
+#include "GameServer.h"
 
 #define BUFFER_SIZE 512
 #define TRUE_SERVER_ANSWER "Hello\n"
@@ -54,7 +54,7 @@ public:
 
     void startGame(Room *room);
 
-    std::unordered_map<int, std::unique_ptr<Game>>& getGames();
+    std::unordered_map<int, std::unique_ptr<GameServer>>& getGames();
 
     static std::string u8StringToString(const std::u8string &u8str);
 
@@ -80,10 +80,10 @@ private:
     ioContextAlias &_ioContext;
     tcpAlias::acceptor _acceptor;
 
-    std::unordered_map<std::variant<NetworkScenario, VotingAnswer, GameMessage>,
+    std::unordered_map<std::variant<NetworkScenario, VotingAnswer>,
             std::unique_ptr<NetworkHandler>> handlerImpls;
 
-    std::unordered_map<int, std::unique_ptr<Game>> activeGames;
+    std::unordered_map<int, std::unique_ptr<GameServer>> activeGames;
 
     Lobby lobby;
 };

@@ -48,12 +48,11 @@ enum class GameMessage {
 
 #define MOVE_STR "MOVE"
 
-std::variant<NetworkScenario, VotingAnswer, GameMessage> defineScenario(const std::string& str);
+std::variant<NetworkScenario, VotingAnswer> defineScenario(const std::string& str);
 
 struct Message {
     NetworkScenario scenario;
     VotingAnswer voteScenario;
-    GameMessage gameScenario;
     std::u8string data;
 
     Message();
@@ -65,41 +64,41 @@ struct Message {
 class NetworkHandler {
 public:
     virtual ~NetworkHandler() noexcept;
-    virtual void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                               Server& server) = 0;
+    virtual void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                                      Server& server) = 0;
 };
 
 class ConnectionNetworkHandler : public NetworkHandler {
 public:
-    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                       Server& server) override;
+    void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                              Server& server) override;
 };
 
 class DisconnectionNetworkHandler : public NetworkHandler {
 public:
-    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                       Server& server) override;
+    void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                              Server& server) override;
 };
 
 class DenialNetworkHandler : public NetworkHandler {
 public:
-    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                       Server& server) override;
+    void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                              Server& server) override;
 };
 
 class StartVotingHandler : public NetworkHandler {
-    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                       Server& server) override;
+    void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                              Server& server) override;
 };
 
 class VotingHandler : public NetworkHandler {
-    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                       Server& server) override;
+    void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                              Server& server) override;
 };
 
-class GameHandler : public NetworkHandler {
-    void handleMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
-                       Server& server) override;
-};
+/*class GameHandler : public NetworkHandler {
+    void handleNetworkMessage(const Message& message, const std::shared_ptr<boost::asio::ip::tcp::socket>& socket,
+                              Server& server) override;
+};*/
 
 #endif //SERVERKURSSWORK_HANDLERS_H
