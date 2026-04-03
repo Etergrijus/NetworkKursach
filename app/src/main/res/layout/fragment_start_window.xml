@@ -29,6 +29,7 @@
         android:textColorHint="@color/red"
         android:textAlignment="center"
         android:textColor="@color/red"
+        android:textSize="@dimen/baseTextSize"
 
         android:layout_below="@id/statusText"
         android:layout_centerHorizontal="true"
@@ -38,19 +39,42 @@
         />
 
     <Button
-        android:id="@+id/button"
-        android:layout_width="match_parent"
+        android:id="@+id/singleGameButton"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/buttonStartGameText"
+        android:text="@string/buttonStartSingleGameText"
         android:textSize="@dimen/baseTextSize"
         android:background="@color/red"
         android:textColor="@color/beige"
-        android:textStyle="bold"
+        android:textStyle="italic"
+        android:textAllCaps="false"
 
         android:layout_below="@id/usernameEdit"
-        android:layout_centerHorizontal="true"
+        android:layout_marginStart="60dp"
         android:layout_marginTop="@dimen/marginViewsStartWindow"
         android:layout_marginHorizontal="@dimen/marginHorizontal"
+
+        android:padding="10dp"
+        />
+
+    <Button
+        android:id="@+id/onlineGameButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/buttonStartOnlineGameText"
+        android:textSize="@dimen/baseTextSize"
+        android:background="@color/red"
+        android:textColor="@color/beige"
+        android:textStyle="italic"
+        android:textAllCaps="false"
+
+        android:layout_below="@id/singleGameButton"
+        android:layout_marginStart="60dp"
+        android:layout_marginEnd="55dp"
+        android:layout_marginTop="@dimen/marginViewsStartWindow"
+        android:layout_marginHorizontal="@dimen/marginHorizontal"
+
+        android:padding="10dp"
         />
 
 </RelativeLayout>

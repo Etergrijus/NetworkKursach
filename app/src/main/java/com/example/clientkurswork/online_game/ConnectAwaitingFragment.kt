@@ -1,4 +1,4 @@
-package com.example.clientkurswork
+package com.example.clientkurswork.online_game
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -17,6 +17,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.example.clientkurswork.FragmentActivitySignalman
+import com.example.clientkurswork.MyApp
+import com.example.clientkurswork.R
 import com.example.clientkurswork.databinding.FragmentAwaitingBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -66,13 +69,14 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
 
         binding.statusText.setText(R.string.awaitingNetwork)
         binding.returnButton.setOnClickListener {
-            signalman?.onReturnOnStart()
             if (netHandler.isConnected())
                 Log.d("Connect Fragment", "Disconnect is awaiting")
             lifecycleScope.launch(Dispatchers.IO) {
                 Log.d("Connect Fragment", "thread?")
                 netHandler.disconnectFromServer(roomId, username)
             }
+
+            signalman?.onReturnOnStart()
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -248,7 +252,7 @@ class ConnectAwaitingFragment(private val username: String) : Fragment() {
                     context?.getString(R.string.startGame) -> {
                         delay(1000)
                         Log.d("Client", "We are starting the game!!")
-                        val intent = Intent(binding.root.context, GameActivity::class.java)
+                        val intent = Intent(binding.root.context, OnlineGameActivity::class.java)
                         intent.putExtra("Username", username)
                         intent.putExtra("RoomID", roomId)
 

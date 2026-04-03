@@ -1,4 +1,4 @@
-package com.example.clientkurswork
+package com.example.clientkurswork.online_game
 
 enum class VoteMessage {
     NOTHING,

@@ -1,7 +1,8 @@
-package com.example.clientkurswork
+package com.example.clientkurswork.online_game
 
 import android.content.Context
 import android.util.Log
+import com.example.clientkurswork.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,7 +15,8 @@ import java.net.Socket
 import java.net.SocketException
 
 class NetworkHandler(private val context: Context) {
-    private val serverAddress = "109.62.178.87"
+    //private val serverAddress = "109.62.178.87"
+    private val serverAddress = "95.71.37.114"
 
     private val serverPort = 12345
 
@@ -33,7 +35,7 @@ class NetworkHandler(private val context: Context) {
         return withContext(Dispatchers.IO) {
             try {
                 socket = Socket()
-                socket.connect(InetSocketAddress(serverAddress, serverPort), 5000)
+                socket.connect(InetSocketAddress(serverAddress, serverPort))
                 Log.d("Network", "Socket connected")
 
                 if (isConnected()) {
@@ -97,26 +99,6 @@ class NetworkHandler(private val context: Context) {
         }
     }
 
-    fun hearServer(onUpdate: (eventType: String, username: String) -> Unit) {
-        scope.launch {
-            try {
-                while (isServerListeningRunning) {
-                    val message = input.readLine()
-                    if (message != null) {
-                        Log.d("Client", "Received: $message")
-                        parseMessage(message, onUpdate)
-                    } else {
-                        Log.d("Client", "Server disconnected")
-                        break
-                    }
-                }
-                Log.d("Client", "Potential-endless loop closed successfully")
-            } catch (e: Exception) {
-                Log.d("Client", "Error in read loop: ${e.message}")
-            }
-        }
-    }
-
     suspend fun changeRoom(roomId: Int, username: String) {
         withContext(Dispatchers.IO) {
             isServerListeningRunning = false
@@ -138,6 +120,34 @@ class NetworkHandler(private val context: Context) {
             Log.d("Network", "My answer - $message")
             output.println("$message $roomId $username")
             output.flush()
+        }
+    }
+
+    suspend fun sendMoveMessage(roomId: Int) {
+        withContext(Dispatchers.IO) {
+            Log.d("Game", "${context.getString(R.string.moveStr)} $roomId")
+            output.println("${context.getString(R.string.moveStr)} $roomId")
+            output.flush()
+        }
+    }
+
+    fun hearServer(onUpdate: (eventType: String, username: String) -> Unit) {
+        scope.launch {
+            try {
+                while (isServerListeningRunning) {
+                    val message = input.readLine()
+                    if (message != null) {
+                        Log.d("Client", "Received: $message")
+                        parseMessage(message, onUpdate)
+                    } else {
+                        Log.d("Client", "Server disconnected")
+                        break
+                    }
+                }
+                Log.d("Client", "Potential-endless loop closed successfully")
+            } catch (e: Exception) {
+                Log.d("Client", "Error in read loop: ${e.message}")
+            }
         }
     }
 
@@ -199,20 +209,12 @@ class NetworkHandler(private val context: Context) {
         }
     }
 
-    suspend fun sendMoveMessage(roomId: Int) {
-        withContext(Dispatchers.IO) {
-            Log.d("Game", "${context.getString(R.string.moveStr)} $roomId")
-            output.println("${context.getString(R.string.moveStr)} $roomId")
-            output.flush()
-        }
-    }
-
     private fun processServerMessage(
         message: String,
         onUpdate: (eventType: String, username: String, result: Int) -> Unit
     ) {
-        val message_ = message.trimEnd()
-        val parts = message_.split(" ")
+        val msg = message.trimEnd()
+        val parts = msg.split(" ")
         if (parts.size == 3 && parts[0] == context.getString(R.string.rolled)) {
             val nick = parts[1]
             val diceResult = parts[2].toInt()
@@ -221,28 +223,6 @@ class NetworkHandler(private val context: Context) {
             Log.d("Game", "Unexpected message: $message")
         }
     }
-
-    /*suspend fun getDiceResult() : Pair<String, Int> {
-        return withContext(Dispatchers.IO) {
-            var response = input.readLine()
-            response = response.trimEnd()
-            val parts = response.split(" ")
-            if (parts.size != 3) {
-                Log.d("Game", "Unexpected roll dice: $response")
-                throw Exception("Unexpected roll dice")
-            }
-
-            if (parts[0] == context.getString(R.string.rolled)) {
-                val nick = parts[1]
-                val diceResult = parts[2].toInt()
-
-                Pair(nick, diceResult)
-            } else {
-                Log.d("Game", "Unexpected roll dice: $response")
-                throw Exception("Unexpected roll dice")
-            }
-        }
-    }*/
 
     fun isConnected(): Boolean {
         return socket.isConnected && !socket.isClosed

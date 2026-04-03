@@ -60,6 +60,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation (libs.ui.tooling)
     implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.constraintlayout.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

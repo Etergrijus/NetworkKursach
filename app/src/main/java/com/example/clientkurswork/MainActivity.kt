@@ -3,12 +3,8 @@ package com.example.clientkurswork
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.clientkurswork.databinding.ActivityMainBinding
-import com.example.clientkurswork.ui.theme.ClientKursWorkTheme
+import com.example.clientkurswork.online_game.ConnectAwaitingFragment
 
 class MainActivity : AppCompatActivity(), FragmentActivitySignalman {
     private lateinit var binding: ActivityMainBinding
@@ -50,18 +46,3 @@ class MainActivity : AppCompatActivity(), FragmentActivitySignalman {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ClientKursWorkTheme {
-        Greeting("Android")
-    }
-}

@@ -1,16 +1,17 @@
-package com.example.clientkurswork
+package com.example.clientkurswork.online_game
 
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.example.clientkurswork.MyApp
+import com.example.clientkurswork.R
 import com.example.clientkurswork.databinding.ActivityGameBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class GameActivity : AppCompatActivity() {
+class OnlineGameActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGameBinding
 
     private var players: ArrayList<String> = arrayListOf()
@@ -27,21 +28,21 @@ class GameActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
-
-        val username = this.intent.getStringExtra("Username").toString()
-        Log.d("GameActivity", username)
-
-        roomId = intent.getIntExtra("RoomID", -1)
-
         setContentView(binding.root)
 
+        //Получаем данные из интентов - имя пользователя, ID комнаты,
+        //список игроков
+        val username = this.intent.getStringExtra("Username").toString()
+        Log.d("OnlineGameActivity", "Your name is $username")
+        roomId = intent.getIntExtra("RoomID", -1)
+        Log.d("OnlineGameActivity", "Your room number is $roomId")
         players = this.intent.getStringArrayListExtra("Usernames")!!
         activePlayer = players[0]
 
         val app = application as MyApp
         netHandler = app.netHandler
 
-        getMoves()
+        listenGameMessages()
 
         binding.makeMoveButton.setOnClickListener {
             if (username != activePlayer)
@@ -54,12 +55,12 @@ class GameActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun getMoves() {
+    private fun listenGameMessages() {
         netHandler.hearGame { eventType, username, result ->
             lifecycleScope.launch(Dispatchers.Main) {
                 when (eventType) {
                     baseContext.getString(R.string.rolled) -> {
-                        Log.d("GameActivity", "Dice rolled by $username: $result")
+                        Log.d("OnlineGameActivity", "Dice rolled by $username: $result")
                         activePlayer = username
                         diceRoll = result
 

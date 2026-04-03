@@ -1,6 +1,7 @@
 package com.example.clientkurswork
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -37,12 +38,22 @@ class StartWindowFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.button.setOnClickListener {
+        binding.onlineGameButton.setOnClickListener {
             if (binding.usernameEdit.text.isEmpty())
                 binding.usernameEdit.setHint(R.string.emptyUsernameHint)
             else {
                 signalman?.onDataPass(binding.usernameEdit.text.toString())
                 signalman?.onShowNextFragment()
+            }
+        }
+
+        binding.singleGameButton.setOnClickListener {
+            if (binding.usernameEdit.text.isEmpty())
+                binding.usernameEdit.setHint(R.string.emptyUsernameHint)
+            else {
+                val intent = Intent(binding.root.context, SingleGameActivity::class.java)
+                intent.putExtra("Username", binding.usernameEdit.text.toString())
+                binding.root.context.startActivity(intent)
             }
         }
     }
